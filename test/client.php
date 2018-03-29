@@ -1,21 +1,21 @@
 <?php
 
-namespace Escapemania\test;
+namespace chryssalid\REST\test;
 
-use Escapemania\ApiCommunication;
+use chryssalid\REST\RESTCommunication;
 
-require_once '../src/APICommunication.php';
+require_once '../src/RESTCommunication.php';
 
 $apiKey = 'TWOJ KLUCZ';
 $apiSecret = 'TWOJ SECRET';
 
 $basepath = '/client/';
 
-$server = new ApiCommunication($apiKey, $apiSecret);
+$server = new RESTCommunication($apiKey, $apiSecret);
 $action = str_replace($basepath, '', $_SERVER['REQUEST_URI']);
 
 if ($action == 'test') {
-    $response = $server->read('test', ApiCommunication::CALL_METHOD_GET);
+    $response = $server->read('test', RESTCommunication::CALL_METHOD_GET);
     if ($response) {
         $server->response(['status' => 'ok']);
     }

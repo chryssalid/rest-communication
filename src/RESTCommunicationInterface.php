@@ -1,6 +1,6 @@
 <?php
 
-namespace chryssalid\ApiCommunication;
+namespace chryssalid\REST;
 
 /**
  * @author Łukasz Feller <lukaszfeller@gmail.com>

@@ -4,6 +4,8 @@ namespace chryssalid\REST;
 
 use Exception;
 
+require_once __DIR__ . '\RESTCommunicationInterface.php';
+
 /**
  * @author Łukasz Feller <lukaszfeller@gmail.com>
  */

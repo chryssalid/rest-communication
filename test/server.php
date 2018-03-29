@@ -1,15 +1,15 @@
 <?php
 
-namespace Escapemania\test;
+namespace chryssalid\REST\test;
 
-use Escapemania\ApiCommunication;
+use chryssalid\REST\RESTCommunication;
 
-require_once '../src/APICommunication.php';
+require_once '../src/RESTCommunication.php';
 
 $apiKey = 'TWOJ KLUCZ';
 $apiSecret = 'TWOJ SECRET';
 
-$server = new ApiCommunication($apiKey, $apiSecret, 'http://escapemania-api-test/client');
+$server = new RESTCommunication($apiKey, $apiSecret, 'http://escapemania-api-test/client');
 $response = $server->request('test');
 if ($response) {
     echo '<pre>' . print_r($response, true) . '</pre>';

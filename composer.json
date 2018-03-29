@@ -15,7 +15,8 @@
     "minimum-stability": "dev",
     "autoload": {
         "psr-4": {
-            "chryssalid\\REST\\": "src/"
+            "chryssalid\\REST\\": "src/",
+            "chryssalid\\REST\\test\\": "test/"
         }
     }
 }

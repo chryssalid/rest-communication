@@ -1,0 +1,5 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^server/(.*) server.php/$1
+    RewriteRule ^client/(.*) client.php/$1
+</IfModule>

@@ -1,0 +1,21 @@
+{
+    "name": "chryssalid/escapemania-api",
+    "description": "Escapemania API client & server.",
+    "type": "library",
+    "license": "gpl-3.0",
+    "require": {
+        "php": ">=5.4.0"
+    },
+    "authors": [
+        {
+            "name": "Łukasz Feller",
+            "email": "lukaszfeller@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "Escapemania\\": "src/"
+        }
+    }
+}

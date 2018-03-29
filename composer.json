@@ -1,6 +1,6 @@
 {
-    "name": "chryssalid/escapemania-api",
-    "description": "Escapemania API client & server.",
+    "name": "chryssalid/rest-communication",
+    "description": "REST client & server.",
     "type": "library",
     "license": "gpl-3.0",
     "require": {
@@ -15,7 +15,7 @@
     "minimum-stability": "dev",
     "autoload": {
         "psr-4": {
-            "Escapemania\\": "src/"
+            "chryssalid\\REST\\": "src/"
         }
     }
 }

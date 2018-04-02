@@ -2,6 +2,9 @@
     "name": "chryssalid/rest-communication",
     "description": "REST client & server.",
     "type": "library",
+    "keywords": [
+        "rest"
+    ],
     "license": "gpl-3.0",
     "require": {
         "php": ">=5.4.0"

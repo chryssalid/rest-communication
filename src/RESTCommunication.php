@@ -17,6 +17,9 @@ class RESTCommunication implements RESTCommunicationInterface {
     protected $apiSecret;
     protected $apiUrl;
 
+    protected $error;
+    protected $errorNo;
+
     public function __construct($apiKey, $apiSecret, $apiUrl = null) {
         $this->apiKey = $apiKey;
         $this->apiSecret = $apiSecret;
@@ -122,5 +125,13 @@ class RESTCommunication implements RESTCommunicationInterface {
         header('Content-Type: application/json');
         http_response_code($response_code);
         echo json_encode($response);
+    }
+
+    public function getError() {
+        return $this->error;
+    }
+    
+    public function getErrorNo() {
+        return $this->errorNo;
     }
 }

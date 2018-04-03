@@ -4,6 +4,7 @@ namespace chryssalid\REST;
 
 use Exception;
 
+require_once __DIR__ . '\RESTCallbackResponse.php';
 require_once __DIR__ . '\RESTCommunicationInterface.php';
 
 /**
@@ -17,10 +18,12 @@ class RESTCommunication implements RESTCommunicationInterface {
     protected $apiSecret;
     protected $apiUrl;
 
+    protected $callbacks = [];
+
     protected $error;
     protected $errorNo;
 
-    public function __construct($apiKey, $apiSecret, $apiUrl = null) {
+    public function __construct($apiKey = null, $apiSecret = null, $apiUrl = null) {
         $this->apiKey = $apiKey;
         $this->apiSecret = $apiSecret;
         $this->apiUrl = empty($apiUrl) ? 'https://escapemania.pl/api/v' . self::API_VERSION . '/call' : $apiUrl;
@@ -31,9 +34,14 @@ class RESTCommunication implements RESTCommunicationInterface {
     }
 
     public function request($action, $content = [], $method = self::CALL_METHOD_GET) {
+        if (empty($this->apiKey) || empty($this->apiSecret)) {
+            throw new Exception('Can\'t send request. API key or API secret is not set.');
+        }
+
         if (!is_array($content)) {
             throw new Exception('$content must be array.');
         }
+
         if ($method === self::CALL_METHOD_GET) {
             if (!empty($content)) {
                 throw new Exception('Can\'t send any content with GET request.');
@@ -102,11 +110,19 @@ class RESTCommunication implements RESTCommunicationInterface {
             exit;
         }
 
-        $hash = hash('sha256', $this->apiSecret . $action . $method . $input);
-        if ($hash !== $headers['Api-Hash']) {
-            $this->response(['status' => 'error', 'message' => 'Invalid hash.'], 406);
-            exit;
+        $callbackResult = $this->callback('read:verification', ['apiKey' => $headers['Api-Key'], 'apiHash' => $headers['Api-Hash'], 'action' => $action, 'method' => $method, 'content' => $input]);
+        if ($callbackResult instanceof RESTCallbackResponse) {
+            if (!$callbackResult->isSilent()) {
+                $this->response($callbackResult->getContent(), $callbackResult->getResponseCode());
+                exit;
+            }
         }
+
+//        $hash = hash('sha256', $this->apiSecret . $action . $method . $input);
+//        if ($hash !== $headers['Api-Hash']) {
+//            $this->response(['status' => 'error', 'message' => 'Invalid hash.'], 406);
+//            exit;
+//        }
 
         if ($method === self::CALL_METHOD_GET) {
             return true;
@@ -116,6 +132,26 @@ class RESTCommunication implements RESTCommunicationInterface {
         return json_last_error() === JSON_ERROR_NONE ? $json : false;
     }
 
+    public function registerCallback($name, $function) {
+        $this->callbacks[$name] = $function;
+    }
+
+    /**
+     * @param string $name
+     * @param string[] $parameters
+     * @return RESTCallbackResponse|null
+     */
+    public function callback($name, $parameters) {
+        if (isset($this->callbacks[$name])) {
+            $return = $this->callbacks[$name]($parameters);
+            if ($return instanceof RESTCallbackResponse) {
+                return $return;
+            } else {
+                throw new Exception(sprintf('Invalid callback\'s %s return. RESTCallbackResponse is required.', $name));
+            }
+        }
+    }
+
     /**
      * Sends response $response to the output as json.
      * @param string[] $response
@@ -123,6 +159,9 @@ class RESTCommunication implements RESTCommunicationInterface {
      */
     public function response($response, $response_code = 200) {
         header('Content-Type: application/json');
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        header("Cache-Control: post-check=0, pre-check=0", false);
+        header("Pragma: no-cache");
         http_response_code($response_code);
         echo json_encode($response);
     }

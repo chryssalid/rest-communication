@@ -21,7 +21,7 @@ interface RESTCommunicationInterface {
      * @param string $method - expected method for the $action.
      * @return string[]|boolean
      */
-    public function read($action, $method);
+    public function read($action);
 
     public function response($response, $response_code = 200);
 }

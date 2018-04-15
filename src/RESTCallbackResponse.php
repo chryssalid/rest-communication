@@ -13,7 +13,8 @@ final class RESTCallbackResponse {
 
     protected $status;
     protected $message;
-    protected $responseCode = 404;
+    protected $responseCode = 200;
+    protected $silent = true;
 
     public function __construct($status = self::STATUS_OK) {
         $this->status = $status;
@@ -41,7 +42,7 @@ final class RESTCallbackResponse {
         return ['status' => $this->status, 'message' => $this->message];
     }
 
-    public function setResponseCode($code = 404) {
+    public function setResponseCode($code) {
         $this->responseCode = $code;
         return $this;
     }

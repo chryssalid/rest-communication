@@ -4,6 +4,7 @@ namespace chryssalid\REST;
 
 use Exception;
 
+require_once __DIR__ . '\RESTCallbackResult.php';
 require_once __DIR__ . '\RESTCallbackResponse.php';
 require_once __DIR__ . '\RESTCommunicationInterface.php';
 
@@ -18,8 +19,17 @@ class RESTCommunication implements RESTCommunicationInterface {
     protected $apiSecret;
     protected $apiUrl;
 
+    /**
+     * @var RESTCallbackResponse[]
+     */
     protected $callbacks = [];
 
+    /**
+     * @var RESTCallbackResult[]
+     */
+    protected $callbackResult= [];
+
+    protected $lastResponse;
     protected $error;
     protected $errorNo;
 
@@ -53,7 +63,7 @@ class RESTCommunication implements RESTCommunicationInterface {
         }
         $hash = hash('sha256', $this->apiSecret . $action . $method . $request);
 
-        $curl = curl_init($this->apiUrl . '/' . $action);
+        $curl = curl_init($this->apiUrl . '/' . urlencode($action));
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
@@ -78,7 +88,7 @@ class RESTCommunication implements RESTCommunicationInterface {
                 break;
         }
 
-        $response = curl_exec($curl);
+        $this->lastResponse = curl_exec($curl);
         if (curl_errno($curl)) {
             $this->errorNo = curl_errno($curl);
             $this->error = curl_error($curl);
@@ -86,43 +96,36 @@ class RESTCommunication implements RESTCommunicationInterface {
             return false;
         } else {
             curl_close($curl);
-            $json = json_decode($response, true);
-            return json_last_error() === JSON_ERROR_NONE ? $json : $response;
+            $json = json_decode($this->lastResponse, true);
+			if (json_last_error() === JSON_ERROR_NONE) {
+				return $json;
+			} else {
+				$this->error = 'Invalid response: ' . $this->lastResponse;
+				return false;
+			}
         }
     }
 
     /**
      * @see ApiCommunicationInterface::read()
      */
-    public function read($action, $method) {
+    public function read($action) {
         $input = file_get_contents('php://input');
         $headers = apache_request_headers();
+        $method = array_key_exists('REQUEST_METHOD', $_SERVER) ? $_SERVER['REQUEST_METHOD'] : 'UNKNOWN';
+
         if (!array_key_exists('Api-Key', $headers) || !array_key_exists('Api-Hash', $headers)) {
             $this->response(['status' => 'error', 'message' => 'Missing headers.'], 406);
             exit;
         }
-        if ($method !== $_SERVER['REQUEST_METHOD']) {
-            $this->response(['status' => 'error', 'message' => 'Invalid HTTP request method.'], 406);
-            exit;
-        }
-        if ($method !== self::CALL_METHOD_GET && empty($input)) {
-            $this->response(['status' => 'error', 'message' => 'Empty input.'], 404);
-            exit;
-        }
 
-        $callbackResult = $this->callback('read:verification', ['apiKey' => $headers['Api-Key'], 'apiHash' => $headers['Api-Hash'], 'action' => $action, 'method' => $method, 'content' => $input]);
-        if ($callbackResult instanceof RESTCallbackResponse) {
-            if (!$callbackResult->isSilent()) {
-                $this->response($callbackResult->getContent(), $callbackResult->getResponseCode());
+        $this->callbackResult['onRead'] = $this->callback('onRead', ['apiKey' => $headers['Api-Key'], 'apiHash' => $headers['Api-Hash'], 'action' => $action, 'method' => $method, 'content' => $input]);
+        if ($this->callbackResult['onRead']->getResponse() instanceof RESTCallbackResponse) {
+            if (!$this->callbackResult['onRead']->getResponse()->isSilent()) {
+                $this->response($this->callbackResult['onRead']->getResponse()->getContent(), $this->callbackResult['onRead']->getResponse()->getResponseCode());
                 exit;
             }
         }
-
-//        $hash = hash('sha256', $this->apiSecret . $action . $method . $input);
-//        if ($hash !== $headers['Api-Hash']) {
-//            $this->response(['status' => 'error', 'message' => 'Invalid hash.'], 406);
-//            exit;
-//        }
 
         if ($method === self::CALL_METHOD_GET) {
             return true;
@@ -136,6 +139,10 @@ class RESTCommunication implements RESTCommunicationInterface {
         $this->callbacks[$name] = $function;
     }
 
+    public function getCallbackResult($callbackName) {
+        return $this->callbackResult[$callbackName];
+    }
+
     /**
      * @param string $name
      * @param string[] $parameters
@@ -144,10 +151,10 @@ class RESTCommunication implements RESTCommunicationInterface {
     public function callback($name, $parameters) {
         if (isset($this->callbacks[$name])) {
             $return = $this->callbacks[$name]($parameters);
-            if ($return instanceof RESTCallbackResponse) {
+            if ($return instanceof RESTCallbackResult) {
                 return $return;
             } else {
-                throw new Exception(sprintf('Invalid callback\'s %s return. RESTCallbackResponse is required.', $name));
+                throw new Exception(sprintf('Invalid callback\'s %s return. RESTCallbackResult is required.', $name));
             }
         }
     }
@@ -172,5 +179,9 @@ class RESTCommunication implements RESTCommunicationInterface {
     
     public function getErrorNo() {
         return $this->errorNo;
+    }
+
+    public function getLastResponse() {
+        return $this->lastResponse;
     }
 }

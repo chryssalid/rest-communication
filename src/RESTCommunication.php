@@ -53,9 +53,6 @@ class RESTCommunication implements RESTCommunicationInterface {
         }
 
         if ($method === self::CALL_METHOD_GET) {
-            if (!empty($content)) {
-                throw new Exception('Can\'t send any content with GET request.');
-            }
             $request = '';
         }
         else {
@@ -63,7 +60,7 @@ class RESTCommunication implements RESTCommunicationInterface {
         }
         $hash = hash('sha256', $this->apiSecret . $action . $method . $request);
 
-        $curl = curl_init($this->apiUrl . '/' . urlencode($action));
+        $curl = curl_init($this->apiUrl . '/' . $action . ($method === self::CALL_METHOD_GET && !empty($content) ? '?' . http_build_query($content) : ''));
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
@@ -120,7 +117,7 @@ class RESTCommunication implements RESTCommunicationInterface {
         }
 
         $this->callbackResult['onRead'] = $this->callback('onRead', ['apiKey' => $headers['Api-Key'], 'apiHash' => $headers['Api-Hash'], 'action' => $action, 'method' => $method, 'content' => $input]);
-        if ($this->callbackResult['onRead']->getResponse() instanceof RESTCallbackResponse) {
+        if ($this->callbackResult['onRead'] && $this->callbackResult['onRead']->getResponse() instanceof RESTCallbackResponse) {
             if (!$this->callbackResult['onRead']->getResponse()->isSilent()) {
                 $this->response($this->callbackResult['onRead']->getResponse()->getContent(), $this->callbackResult['onRead']->getResponse()->getResponseCode());
                 exit;

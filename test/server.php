@@ -14,3 +14,6 @@ $response = $server->request('test');
 if ($response) {
     echo '<pre>' . print_r($response, true) . '</pre>';
 }
+else {
+    echo $server->getError();
+}
